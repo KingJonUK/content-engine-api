@@ -41,7 +41,7 @@ router.get("/clients", async (_req, res): Promise<void> => {
 router.post("/clients", async (req, res): Promise<void> => {
   const parsed = CreateClientBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [client] = await db.insert(clientsTable).values(parsed.data).returning();
+  const [client] = await db.insert(clientsTable).values(parsed.data as any).returning();
   res.status(201).json(client);
 });
 
@@ -90,7 +90,7 @@ router.put("/clients/:clientId/brand", async (req, res): Promise<void> => {
   if (existing.length > 0) {
     [profile] = await db.update(brandProfilesTable).set(parsed.data).where(eq(brandProfilesTable.clientId, params.data.clientId)).returning();
   } else {
-    [profile] = await db.insert(brandProfilesTable).values({ ...parsed.data, clientId: params.data.clientId }).returning();
+    [profile] = await db.insert(brandProfilesTable).values({ ...parsed.data, clientId: params.data.clientId } as any).returning();
   }
   res.json(profile);
 });
@@ -107,7 +107,7 @@ router.post("/clients/:clientId/campaigns", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = CreateCampaignBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [campaign] = await db.insert(campaignsTable).values({ ...parsed.data, clientId: params.data.clientId }).returning();
+  const [campaign] = await db.insert(campaignsTable).values({ ...parsed.data, clientId: params.data.clientId } as any).returning();
   res.status(201).json(campaign);
 });
 
@@ -153,7 +153,7 @@ router.post("/clients/:clientId/content", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = CreateContentBriefBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [brief] = await db.insert(contentBriefsTable).values({ ...parsed.data, clientId: params.data.clientId }).returning();
+  const [brief] = await db.insert(contentBriefsTable).values({ ...parsed.data, clientId: params.data.clientId } as any).returning();
   res.status(201).json(brief);
 });
 
@@ -192,7 +192,7 @@ router.get("/providers", async (_req, res): Promise<void> => {
 router.post("/providers", async (req, res): Promise<void> => {
   const { name, providerType, apiKey, baseUrl, defaultModel } = req.body;
   if (!name || !apiKey || !defaultModel) { res.status(400).json({ error: "name, apiKey, and defaultModel are required" }); return; }
-  const [provider] = await db.insert(aiProvidersTable).values({ name, providerType: providerType || "openai", apiKey, baseUrl: baseUrl || null, defaultModel }).returning();
+  const [provider] = await db.insert(aiProvidersTable).values({ name, providerType:  providerType || "openai", apiKey, baseUrl: baseUrl || null, defaultModel }).returning();
   res.status(201).json({ ...provider, apiKey: provider.apiKey.slice(0, 8) + "..." + provider.apiKey.slice(-4) });
 });
 
@@ -328,7 +328,7 @@ router.get("/openai/conversations", async (_req, res): Promise<void> => {
 router.post("/openai/conversations", async (req, res): Promise<void> => {
   const parsed = CreateOpenaiConversationBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [conversation] = await db.insert(conversationsTable).values(parsed.data).returning();
+  const [conversation] = await db.insert(conversationsTable).values(parsed.data as any).returning();
   res.status(201).json(conversation);
 });
 
