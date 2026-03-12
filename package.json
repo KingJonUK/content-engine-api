@@ -1,0 +1,29 @@
+{
+  "name": "content-engine",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.44.0",
+    "express": "^5.0.1",
+    "openai": "^4.85.0",
+    "pg": "^8.13.3",
+    "zod": "^3.24.2",
+    "drizzle-zod": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
