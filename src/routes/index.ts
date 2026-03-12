@@ -124,7 +124,7 @@ router.patch("/campaigns/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateCampaignBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [campaign] = await db.update(campaignsTable).set(parsed.data).where(eq(campaignsTable.id, params.data.id)).returning();
+  const [campaign] = await db.update(campaignsTable).set(parsed.data as any).where(eq(campaignsTable.id, params.data.id)).returning();
   if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
   res.json(campaign);
 });
@@ -170,7 +170,7 @@ router.patch("/content/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateContentBriefBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [brief] = await db.update(contentBriefsTable).set(parsed.data).where(eq(contentBriefsTable.id, params.data.id)).returning();
+  const [brief] = await db.update(contentBriefsTable).set(parsed.data as any).where(eq(contentBriefsTable.id, params.data.id)).returning();
   if (!brief) { res.status(404).json({ error: "Content brief not found" }); return; }
   res.json(brief);
 });
