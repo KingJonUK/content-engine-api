@@ -15,4 +15,12 @@ export const db = drizzle(pool, { schema: { ...schema, clientsTable, aiProviders
 
 export { clientsTable } from "./schema/clients";
 export { aiProvidersTable } from "./schema/aiProviders";
-export * from "./schema/tables";
+export {
+  brandProfilesTable,
+  campaignsTable,
+  contentBriefsTable,
+  agentRunsTable,
+  agentModelDefaultsTable,
+  conversationsTable,
+  messagesTable,
+} from "./schema/tables";
