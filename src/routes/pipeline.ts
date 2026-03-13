@@ -89,6 +89,14 @@ function buildBrandContext(client: any, brand: any): string {
     `Vocabulary: ${brand?.vocabulary || "Not specified"}`,
     `Proof Points: ${brand?.proofPoints || "Not specified"}`,
     `Transformation: ${brand?.transformation || "Not specified"}`,
+    ``,
+    `## Brand Identity`,
+    `Primary Colour: ${brand?.primaryColor || "Not specified"}`,
+    `Secondary Colour: ${brand?.secondaryColor || "Not specified"}`,
+    `Accent Colour: ${brand?.accentColor || "Not specified"}`,
+    `Primary Font: ${brand?.fontPrimary || "Not specified"}`,
+    `Secondary Font: ${brand?.fontSecondary || "Not specified"}`,
+    `Logo URL: ${brand?.brandLogoUrl || "Not specified"}`,
   ].join("\n");
 }
 
