@@ -26,7 +26,20 @@ router.post("/setup", async (_req, res): Promise<void> => {
     await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS font_secondary TEXT`);
     await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS brand_logo_url TEXT`);
     await client.query(`CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, role TEXT NOT NULL, content TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-    res.json({ success: true, message: "All 9 tables created + brand identity columns migrated" });
+    
+    await client.query(`CREATE TABLE IF NOT EXISTS media_providers (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      media_type TEXT NOT NULL,
+      provider_type TEXT NOT NULL,
+      api_key TEXT NOT NULL,
+      base_url TEXT,
+      default_model TEXT NOT NULL,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    res.json({ success: true, message: "All tables created + media providers table migrated" });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   } finally {
