@@ -75,6 +75,17 @@ Be precise enough that a designer can execute without ambiguity.`,
 5. Newsletter section (personal context + behind-the-scenes + insight)
 6. Blog post outline (H2 structure, 1500-word target)
 Each version must be standalone and follow brand voice exactly.`,
+
+  image_generation: `You are an Image Prompt Agent. Based on the copy and brand identity above, write a highly detailed image generation prompt.
+Include: visual style, composition, colour palette (use the brand colours), mood, lighting, subject matter.
+The image must visually represent the content and be on-brand.
+Output ONLY the image prompt — no explanation, no commentary.`,
+
+  video_generation: `You are a Video Script & Prompt Agent. Based on the copy and brand identity above, write:
+1. VIDEO PROMPT: A detailed text-to-video prompt (scene, motion, style, mood, duration 5-10s)
+2. VOICE OVER: The spoken words for the video (under 30 words)
+3. ON-SCREEN TEXT: Key text overlays (max 3 lines)
+Keep it punchy, visual, and on-brand. Output all three sections clearly labelled.`,
 };
 
 function buildBrandContext(client: any, brand: any): string {
@@ -317,15 +328,5 @@ router.get("/pipeline/output-types", (_req, res) => {
   );
 });
 
-export default router
 
-  image_generation: `You are an Image Prompt Agent. Based on the copy and brand identity above, write a highly detailed image generation prompt.
-Include: visual style, composition, colour palette (use the brand colours), mood, lighting, subject matter.
-The image must visually represent the content and be on-brand.
-Output ONLY the image prompt — no explanation, no commentary.`,
-
-  video_generation: `You are a Video Script & Prompt Agent. Based on the copy and brand identity above, write:
-1. VIDEO PROMPT: A detailed text-to-video prompt (scene, motion, style, mood, duration 5-10s)
-2. VOICE OVER: The spoken words for the video (under 30 words)
-3. ON-SCREEN TEXT: Key text overlays (max 3 lines)
-Keep it punchy, visual, and on-brand. Output all three sections clearly labelled.`,;
+export default router;
