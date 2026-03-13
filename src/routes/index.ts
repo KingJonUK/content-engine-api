@@ -1,4 +1,5 @@
 import { Router } from "express";
+import setupRouter from "./setup";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 import OpenAI from "openai";
 import { db, clientsTable, brandProfilesTable, campaignsTable, contentBriefsTable, agentRunsTable, agentModelDefaultsTable, aiProvidersTable, conversationsTable, messagesTable } from "../db";
@@ -15,12 +16,12 @@ import {
 
 const router = Router();
 
-// ─── Health ───────────────────────────────────────────────────────────────────
+// âââ Health âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/healthz", (_req, res) => {
   res.json(HealthCheckResponse.parse({ status: "ok" }));
 });
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+// âââ Dashboard ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/dashboard/stats", async (_req, res): Promise<void> => {
   const [clientCount] = await db.select({ count: count() }).from(clientsTable);
   const [campaignCount] = await db.select({ count: count() }).from(campaignsTable).where(eq(campaignsTable.status, "active"));
@@ -33,7 +34,7 @@ router.get("/dashboard/stats", async (_req, res): Promise<void> => {
   res.json({ totalClients: clientCount.count, activeCampaigns: campaignCount.count, contentInPipeline: pipelineCount.count, contentPublished: publishedCount.count, agentRunsToday: runsToday.count, recentContent, recentRuns });
 });
 
-// ─── Clients ──────────────────────────────────────────────────────────────────
+// âââ Clients ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/clients", async (_req, res): Promise<void> => {
   res.json(await db.select().from(clientsTable).orderBy(clientsTable.createdAt));
 });
@@ -71,7 +72,7 @@ router.delete("/clients/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// ─── Brand Profiles ───────────────────────────────────────────────────────────
+// âââ Brand Profiles âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/clients/:clientId/brand", async (req, res): Promise<void> => {
   const params = GetBrandProfileParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
@@ -95,7 +96,7 @@ router.put("/clients/:clientId/brand", async (req, res): Promise<void> => {
   res.json(profile);
 });
 
-// ─── Campaigns ────────────────────────────────────────────────────────────────
+// âââ Campaigns ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/clients/:clientId/campaigns", async (req, res): Promise<void> => {
   const params = ListCampaignsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
@@ -137,7 +138,7 @@ router.delete("/campaigns/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// ─── Content Briefs ───────────────────────────────────────────────────────────
+// âââ Content Briefs âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/clients/:clientId/content", async (req, res): Promise<void> => {
   const params = ListContentBriefsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
@@ -183,7 +184,7 @@ router.delete("/content/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// ─── AI Providers ─────────────────────────────────────────────────────────────
+// âââ AI Providers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/providers", async (_req, res): Promise<void> => {
   const providers = await db.select().from(aiProvidersTable).orderBy(aiProvidersTable.createdAt);
   res.json(providers.map(p => ({ ...p, apiKey: p.apiKey.slice(0, 8) + "..." + p.apiKey.slice(-4) })));
@@ -234,7 +235,7 @@ router.post("/providers/:id/test", async (req, res): Promise<void> => {
   }
 });
 
-// ─── Agent Defaults ───────────────────────────────────────────────────────────
+// âââ Agent Defaults âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/agent-defaults", async (_req, res): Promise<void> => {
   const defaults = await db.select({ id: agentModelDefaultsTable.id, agentType: agentModelDefaultsTable.agentType, providerId: agentModelDefaultsTable.providerId, model: agentModelDefaultsTable.model, providerName: aiProvidersTable.name, createdAt: agentModelDefaultsTable.createdAt, updatedAt: agentModelDefaultsTable.updatedAt }).from(agentModelDefaultsTable).leftJoin(aiProvidersTable, eq(agentModelDefaultsTable.providerId, aiProvidersTable.id));
   res.json(defaults);
@@ -262,7 +263,7 @@ router.delete("/agent-defaults/:agentType", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// ─── Agents / Runs ────────────────────────────────────────────────────────────
+// âââ Agents / Runs ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.post("/agents/run", async (req, res): Promise<void> => {
   const { clientId, contentBriefId, agentType, input, providerId, model } = req.body;
   if (!clientId || !agentType || !input) { res.status(400).json({ error: "clientId, agentType, and input are required" }); return; }
@@ -320,7 +321,7 @@ router.get("/agents/runs/:id", async (req, res): Promise<void> => {
   res.json(run);
 });
 
-// ─── Conversations / OpenAI Chat ──────────────────────────────────────────────
+// âââ Conversations / OpenAI Chat ââââââââââââââââââââââââââââââââââââââââââââââ
 router.get("/openai/conversations", async (_req, res): Promise<void> => {
   res.json(await db.select().from(conversationsTable).orderBy(desc(conversationsTable.createdAt)));
 });
@@ -401,5 +402,7 @@ router.post("/openai/generate-image", async (req, res): Promise<void> => {
     res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
   }
 });
+
+router.use(setupRouter);
 
 export default router;
