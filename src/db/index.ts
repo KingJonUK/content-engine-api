@@ -23,4 +23,5 @@ export {
   agentModelDefaultsTable,
   conversationsTable,
   messagesTable,
+  mediaProvidersTable,
 } from "./schema/tables";
