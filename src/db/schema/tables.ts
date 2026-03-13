@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean} from "drizzle-orm/pg-core";
 import { clientsTable } from "./clients";
 import { aiProvidersTable } from "./aiProviders";
 
@@ -95,4 +95,17 @@ export const messagesTable = pgTable("messages", {
   role: text("role").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const mediaProvidersTable = pgTable("media_providers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  mediaType: text("media_type").notNull(), // "image" | "video"
+  providerType: text("provider_type").notNull(), // "openai" | "replicate" | "stability" | "openrouter" | "runway" | "kling" | "luma"
+  apiKey: text("api_key").notNull(),
+  baseUrl: text("base_url"),
+  defaultModel: text("default_model").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
