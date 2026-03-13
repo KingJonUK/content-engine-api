@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { sql } from "drizzle-orm";
-import { db } from "../db";
+import { pool } from "../db";
 
 const router = Router();
 
 router.post("/setup", async (_req, res): Promise<void> => {
+  const client = await pool.connect();
   try {
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -19,7 +19,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS ai_providers (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -32,7 +32,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS brand_profiles (
         id SERIAL PRIMARY KEY,
         client_id INTEGER NOT NULL UNIQUE REFERENCES clients(id) ON DELETE CASCADE,
@@ -51,7 +51,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id SERIAL PRIMARY KEY,
         client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -66,7 +66,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS content_briefs (
         id SERIAL PRIMARY KEY,
         client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -88,7 +88,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS agent_runs (
         id SERIAL PRIMARY KEY,
         client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -102,7 +102,7 @@ router.post("/setup", async (_req, res): Promise<void> => {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS agent_model_defaults (
         id SERIAL PRIMARY KEY,
         agent_type TEXT NOT NULL UNIQUE,
@@ -112,14 +112,14 @@ router.post("/setup", async (_req, res): Promise<void> => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
@@ -128,9 +128,11 @@ router.post("/setup", async (_req, res): Promise<void> => {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    res.json({ success: true, message: "All tables created successfully" });
+    res.json({ success: true, message: "All 9 tables created successfully" });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 
