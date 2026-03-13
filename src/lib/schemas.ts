@@ -40,6 +40,12 @@ export const UpsertBrandProfileBody = z.object({
   proofPoints: z.string().optional().nullable(),
   contentPillars: z.string().optional().nullable(),
   platforms: z.string().optional().nullable(),
+  primaryColor: z.string().optional().nullable(),
+  secondaryColor: z.string().optional().nullable(),
+  accentColor: z.string().optional().nullable(),
+  fontPrimary: z.string().optional().nullable(),
+  fontSecondary: z.string().optional().nullable(),
+  brandLogoUrl: z.string().optional().nullable(),
 });
 export const UpsertBrandProfileResponse = z.any();
 
