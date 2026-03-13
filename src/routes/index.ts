@@ -1,5 +1,6 @@
 import { Router } from "express";
 import setupRouter from "./setup";
+import pipelineRouter from "./pipeline";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 import OpenAI from "openai";
 import { db, clientsTable, brandProfilesTable, campaignsTable, contentBriefsTable, agentRunsTable, agentModelDefaultsTable, aiProvidersTable, conversationsTable, messagesTable } from "../db";
@@ -404,5 +405,6 @@ router.post("/openai/generate-image", async (req, res): Promise<void> => {
 });
 
 router.use(setupRouter);
+router.use(pipelineRouter);
 
 export default router;
