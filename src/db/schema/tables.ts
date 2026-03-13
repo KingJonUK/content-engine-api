@@ -16,6 +16,12 @@ export const brandProfilesTable = pgTable("brand_profiles", {
   proofPoints: text("proof_points"),
   contentPillars: text("content_pillars"),
   platforms: text("platforms"),
+  primaryColor: text("primary_color"),
+  secondaryColor: text("secondary_color"),
+  accentColor: text("accent_color"),
+  fontPrimary: text("font_primary"),
+  fontSecondary: text("font_secondary"),
+  brandLogoUrl: text("brand_logo_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
