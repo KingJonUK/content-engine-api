@@ -8,16 +8,20 @@ import {
   agentRunsTable,
 } from "../db";
 import { resolveProviderAndModel } from "../lib/aiClient";
+import { generateImage, generateVideo } from "../lib/mediaClient";
 
 const router = Router();
 
 const PIPELINE_SEQUENCES: Record<string, string[]> = {
-  linkedin_post:      ["strategy", "research", "angle", "hook", "copywriter", "cta", "qa"],
-  twitter_thread:     ["research", "hook", "copywriter", "qa"],
-  instagram_carousel: ["angle", "creative_direction", "copywriter", "cta", "qa"],
-  email_newsletter:   ["strategy", "copywriter", "cta", "qa"],
-  full_repurpose:     ["copywriter", "repurpose", "qa"],
-  content_campaign:   ["strategy", "research", "angle", "hook", "copywriter", "cta", "qa"],
+  linkedin_post:       ["strategy", "research", "angle", "hook", "copywriter", "cta", "qa"],
+  linkedin_post_visual:["strategy", "research", "angle", "hook", "copywriter", "cta", "qa", "image_generation"],
+  twitter_thread:      ["research", "hook", "copywriter", "qa"],
+  instagram_carousel:  ["angle", "creative_direction", "copywriter", "cta", "qa", "image_generation"],
+  instagram_reel:      ["angle", "hook", "copywriter", "cta", "video_generation"],
+  email_newsletter:    ["strategy", "copywriter", "cta", "qa"],
+  full_repurpose:      ["copywriter", "repurpose", "qa"],
+  content_campaign:    ["strategy", "research", "angle", "hook", "copywriter", "cta", "qa"],
+  social_video:        ["angle", "hook", "copywriter", "video_generation"],
 };
 
 const PIPELINE_AGENT_PROMPTS: Record<string, string> = {
@@ -107,6 +111,70 @@ async function runAgent(
   previousOutput: string,
   onChunk: (text: string) => void
 ): Promise<string> {
+  // Handle image generation agent
+  if (agentType === "image_generation") {
+    onChunk("🎨 Generating image prompt from copy...");
+    // First get a text prompt from the LLM
+    const textResolved = await resolveProviderAndModel("image_generation");
+    const promptStream = await textResolved.client.chat.completions.create({
+      model: textResolved.model, max_tokens: 500,
+      messages: [
+        { role: "system", content: PIPELINE_AGENT_PROMPTS.image_generation },
+        { role: "user", content: [brandContext, previousOutput ? `\n## Content to Visualise\n${previousOutput}` : ""].join("\n") }
+      ], stream: true,
+    });
+    let imagePrompt = "";
+    for await (const chunk of promptStream) {
+      const t = chunk.choices[0]?.delta?.content;
+      if (t) { imagePrompt += t; onChunk(t); }
+    }
+    onChunk("\n\n🖼️ Generating image...");
+    try {
+      const result = await generateImage(imagePrompt.trim());
+      const output = result.url
+        ? `**Image Prompt:**\n${imagePrompt}\n\n**Generated Image URL:**\n${result.url}`
+        : `**Image Prompt:**\n${imagePrompt}\n\n**Generated Image (base64):**\n[image/png base64 data]`;
+      onChunk("\n✅ Image generated successfully");
+      return output;
+    } catch (err: any) {
+      onChunk(`\n⚠️ Image generation failed: ${err.message}. Returning prompt only.`);
+      return `**Image Prompt:**\n${imagePrompt}\n\n**Note:** Image generation failed — ${err.message}`;
+    }
+  }
+
+  // Handle video generation agent
+  if (agentType === "video_generation") {
+    onChunk("🎬 Writing video script and prompt...");
+    const textResolved = await resolveProviderAndModel("video_generation");
+    const scriptStream = await textResolved.client.chat.completions.create({
+      model: textResolved.model, max_tokens: 800,
+      messages: [
+        { role: "system", content: PIPELINE_AGENT_PROMPTS.video_generation },
+        { role: "user", content: [brandContext, previousOutput ? `\n## Content to Adapt\n${previousOutput}` : ""].join("\n") }
+      ], stream: true,
+    });
+    let script = "";
+    for await (const chunk of scriptStream) {
+      const t = chunk.choices[0]?.delta?.content;
+      if (t) { script += t; onChunk(t); }
+    }
+    // Extract VIDEO PROMPT section for generation
+    const videoPromptMatch = script.match(/VIDEO PROMPT[:\s]+([\s\S]+?)(?=VOICE OVER|ON-SCREEN TEXT|$)/i);
+    const videoPrompt = videoPromptMatch?.[1]?.trim() || script;
+    onChunk("\n\n🎥 Generating video...");
+    try {
+      const result = await generateVideo(videoPrompt);
+      const output = result.url
+        ? `${script}\n\n**Generated Video URL:**\n${result.url}`
+        : `${script}\n\n**Note:** Video generation did not return a URL.`;
+      onChunk("\n✅ Video generated successfully");
+      return output;
+    } catch (err: any) {
+      onChunk(`\n⚠️ Video generation failed: ${err.message}. Returning script only.`);
+      return `${script}\n\n**Note:** Video generation failed — ${err.message}`;
+    }
+  }
+
   const resolved = await resolveProviderAndModel(agentType);
   const systemPrompt = PIPELINE_AGENT_PROMPTS[agentType] ||
     "You are a helpful content marketing assistant. Always reference the Customer Profile.";
@@ -249,4 +317,15 @@ router.get("/pipeline/output-types", (_req, res) => {
   );
 });
 
-export default router;
+export default router
+
+  image_generation: `You are an Image Prompt Agent. Based on the copy and brand identity above, write a highly detailed image generation prompt.
+Include: visual style, composition, colour palette (use the brand colours), mood, lighting, subject matter.
+The image must visually represent the content and be on-brand.
+Output ONLY the image prompt — no explanation, no commentary.`,
+
+  video_generation: `You are a Video Script & Prompt Agent. Based on the copy and brand identity above, write:
+1. VIDEO PROMPT: A detailed text-to-video prompt (scene, motion, style, mood, duration 5-10s)
+2. VOICE OVER: The spoken words for the video (under 30 words)
+3. ON-SCREEN TEXT: Key text overlays (max 3 lines)
+Keep it punchy, visual, and on-brand. Output all three sections clearly labelled.`,;
