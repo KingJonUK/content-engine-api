@@ -3,8 +3,9 @@ import setupRouter from "./setup";
 import pipelineRouter from "./pipeline";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 import OpenAI from "openai";
-import { db, clientsTable, brandProfilesTable, campaignsTable, contentBriefsTable, agentRunsTable, agentModelDefaultsTable, aiProvidersTable, conversationsTable, messagesTable } from "../db";
+import { db, clientsTable, brandProfilesTable, campaignsTable, contentBriefsTable, agentRunsTable, agentModelDefaultsTable, aiProvidersTable, mediaProvidersTable, conversationsTable, messagesTable } from "../db";
 import { resolveProviderAndModel } from "../lib/aiClient";
+import { generateImage, generateVideo } from "../lib/mediaClient";
 import { getAgentSystemPrompt, buildAgentUserPrompt } from "../lib/agentPrompts";
 import {
   HealthCheckResponse, CreateClientBody, GetClientParams, UpdateClientParams, UpdateClientBody, DeleteClientParams,
@@ -401,6 +402,72 @@ router.post("/openai/generate-image", async (req, res): Promise<void> => {
     res.json({ b64_json: response.data[0]?.b64_json || "" });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+  }
+});
+
+
+// ─── Media Providers ─────────────────────────────────────────────────────────
+router.get("/media-providers", async (_req, res): Promise<void> => {
+  const providers = await db.select().from(mediaProvidersTable).orderBy(mediaProvidersTable.createdAt);
+  res.json(providers.map(p => ({ ...p, apiKey: p.apiKey.slice(0, 8) + "..." + p.apiKey.slice(-4) })));
+});
+
+router.post("/media-providers", async (req, res): Promise<void> => {
+  const { name, mediaType, providerType, apiKey, baseUrl, defaultModel } = req.body;
+  if (!name || !mediaType || !providerType || !apiKey || !defaultModel) {
+    res.status(400).json({ error: "name, mediaType, providerType, apiKey, and defaultModel are required" }); return;
+  }
+  const [provider] = await db.insert(mediaProvidersTable).values({ name, mediaType, providerType, apiKey, baseUrl: baseUrl || null, defaultModel }).returning();
+  res.status(201).json({ ...provider, apiKey: provider.apiKey.slice(0, 8) + "..." + provider.apiKey.slice(-4) });
+});
+
+router.patch("/media-providers/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const updates: Record<string, unknown> = {};
+  for (const k of ["name", "mediaType", "providerType", "baseUrl", "defaultModel", "isActive"]) {
+    if (req.body[k] !== undefined) updates[k] = req.body[k] || null;
+  }
+  if (req.body.apiKey && req.body.apiKey !== "") updates.apiKey = req.body.apiKey;
+  const [provider] = await db.update(mediaProvidersTable).set(updates).where(eq(mediaProvidersTable.id, id)).returning();
+  if (!provider) { res.status(404).json({ error: "Provider not found" }); return; }
+  res.json({ ...provider, apiKey: provider.apiKey.slice(0, 8) + "..." + provider.apiKey.slice(-4) });
+});
+
+router.delete("/media-providers/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [deleted] = await db.delete(mediaProvidersTable).where(eq(mediaProvidersTable.id, id)).returning();
+  if (!deleted) { res.status(404).json({ error: "Provider not found" }); return; }
+  res.sendStatus(204);
+});
+
+router.post("/media-providers/:id/test", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [provider] = await db.select().from(mediaProvidersTable).where(eq(mediaProvidersTable.id, id));
+  if (!provider) { res.status(404).json({ error: "Provider not found" }); return; }
+  res.json({ success: true, message: `Provider "${provider.name}" (${provider.mediaType}) configured with model ${provider.defaultModel}` });
+});
+
+router.post("/media/generate-image", async (req, res): Promise<void> => {
+  const { prompt, providerId, model } = req.body;
+  if (!prompt) { res.status(400).json({ error: "prompt is required" }); return; }
+  try {
+    const result = await generateImage(prompt, providerId, model);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/media/generate-video", async (req, res): Promise<void> => {
+  const { prompt, imageUrl, providerId, model } = req.body;
+  if (!prompt) { res.status(400).json({ error: "prompt is required" }); return; }
+  try {
+    const result = await generateVideo(prompt, imageUrl, providerId, model);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
