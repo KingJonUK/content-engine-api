@@ -19,8 +19,14 @@ router.post("/setup", async (_req, res): Promise<void> => {
     await client.query(`CREATE TABLE IF NOT EXISTS agent_runs (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE, content_brief_id INTEGER REFERENCES content_briefs(id) ON DELETE SET NULL, agent_type TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running', input TEXT NOT NULL, output TEXT, ai_provider_id INTEGER REFERENCES ai_providers(id) ON DELETE SET NULL, model TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
     await client.query(`CREATE TABLE IF NOT EXISTS agent_model_defaults (id SERIAL PRIMARY KEY, agent_type TEXT NOT NULL UNIQUE, provider_id INTEGER NOT NULL REFERENCES ai_providers(id) ON DELETE CASCADE, model TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
     await client.query(`CREATE TABLE IF NOT EXISTS conversations (id SERIAL PRIMARY KEY, title TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS primary_color TEXT`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS secondary_color TEXT`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS accent_color TEXT`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS font_primary TEXT`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS font_secondary TEXT`);
+    await client.query(`ALTER TABLE brand_profiles ADD COLUMN IF NOT EXISTS brand_logo_url TEXT`);
     await client.query(`CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, role TEXT NOT NULL, content TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-    res.json({ success: true, message: "All 9 tables created successfully" });
+    res.json({ success: true, message: "All 9 tables created + brand identity columns migrated" });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   } finally {
